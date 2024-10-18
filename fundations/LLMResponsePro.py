@@ -44,4 +44,18 @@ class LLMResponsePro(LLMResponse):
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
-
+        
+    def whisper(self, audio_file_path):
+        """
+        Transcribe an audio file using the Whisper model.
+        """
+        try:
+            with open(audio_file_path, "rb") as audio_file:
+                transcription = self.client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                )
+            return transcription.text
+        except Exception as e:
+            print(f"An error occurred during transcription: {e}")
+            return None
