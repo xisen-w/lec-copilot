@@ -1,5 +1,6 @@
 import sys
 import os
+from typing import List
 
 # Add the project root directory to the Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -8,17 +9,22 @@ sys.path.append(project_root)
 from Agents.basicAgents import LLMAgent
 from fundations.LLMResponsePro import LLMResponsePro
 from fundations.open_ai_RAG import Retriever
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class IdeaCardSchema(BaseModel):
-    idea_name: str
-    idea_explanation: str
+    idea_name: str = Field(..., description="The name of the idea.")
+    idea_explanation: str = Field(..., description="The explanation of the idea.")
+    idea_context: str = Field(..., description="Context of the idea & introducing the idea in greater depth, with at least 3 bullet points.")
+
+class IdeaCardsSchema(BaseModel):
+    idea_cards: list[IdeaCardSchema] = Field(..., description="List of idea cards.")
 
 class LectureAgent(LLMAgent):
     def __init__(self, model_name):
         super().__init__(model_name)
         self.retriever = Retriever()
         self.llm_pro = LLMResponsePro(model_name)
+        self.student_info = None
 
     def record_lecture(self, audio_file_path):
         """
@@ -26,30 +32,38 @@ class LectureAgent(LLMAgent):
         """
         transcription = self.llm_pro.whisper(audio_file_path)
         return transcription
+    
 
-    def explain(self, lecture_content: str):
+    def explain(self, lecture_content: str) -> IdeaCardsSchema:
         """
-        Check for terms in the lecture content that need explanation and provide explanations.
+        Analyze the lecture content to identify and explain key terms.
         Outputs a schema of list of idea cards.
         """
-        # Split lecture content into chunks (e.g., sentences or paragraphs)
-        chunks = lecture_content.split('. ')
-        idea_cards = []
+        system_prompt = """
+        You are a helpful assistant. You are professional. The student is an undergraduate student majoring in a subject at Oxford University. Explain concepts clearly and concisely.
 
-        for chunk in chunks:
-            # Use LLM to identify and explain terms
-            response = self.perform_action(
-                system_prompt="Identify and explain key terms in the following text.",
-                user_prompt=chunk,
-                schema_class=IdeaCardSchema
-            )
-            if response:
-                # Assuming response is a list of IdeaCardSchema objects
-                idea_cards.extend(response)
+        For each key idea, provide:
+        1. Idea Name: A concise name for the idea.
+        2. Idea Explanation: A brief explanation of the idea. Use LaTeX for formulas if needed, enclosed in $$ symbols.
+        3. Idea Context: Detailed explanation with at least 3 bullet points. Use LaTeX for formulas if needed, enclosed in $$ symbols.
+
+        Example of using LaTeX for formulas:
+        - The quadratic formula is given by $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
+
+        Ensure that your explanations are clear and appropriate for an undergraduate level of understanding.
+        """
+        
+        user_prompt = lecture_content
+
+        idea_cards = self.perform_action(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            schema_class=IdeaCardsSchema
+        )
 
         return idea_cards
 
-    def build_knowledge(self, pdf_paths: list[str]):
+    def build_knowledge(self, pdf_paths: List[str]):
         """
         Build a knowledge base by uploading PDFs or text, storing them in chunks and vector store.
         """
