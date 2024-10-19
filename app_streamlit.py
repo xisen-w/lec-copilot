@@ -5,18 +5,19 @@ import tempfile
 from Agents.lectureAgent import LectureAgent
 import re
 
-# Function to wrap inline LaTeX in $$ and block LaTeX in $$$$
-def format_latex(text):
-    # Replace single $ with $$ for inline LaTeX
-    text = re.sub(r'(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)', r'$$\1$$', text)
-    # Replace double $$ with $$$$ for block LaTeX
-    text = re.sub(r'\$\$(.+?)\$\$', r'$$$$\1$$$$', text, flags=re.DOTALL)
-    return text
-
-# Function to split text into LaTeX and non-LaTeX parts
-def split_latex(text):
-    parts = re.split(r'(\$\$.*?\$\$)', text, flags=re.DOTALL)
-    return parts
+def render_latex(text):
+    # Split the text into LaTeX and non-LaTeX parts
+    parts = re.split(r'(\$\$?.*?\$\$?)', text)
+    for part in parts:
+        if part.startswith('$$') and part.endswith('$$'):
+            # Display formula
+            st.latex(part.strip('$'))
+        elif part.startswith('$') and part.endswith('$'):
+            # Inline formula
+            st.markdown(part)
+        else:
+            # Regular text
+            st.write(part)
 
 # Initialize the LectureAgent
 model_name = "gpt-4o-mini"  # Replace with your actual model name
@@ -47,28 +48,17 @@ if audio_bytes:
         idea_cards_schema = lecture_agent.explain(transcription)
         st.subheader("Key Ideas:")
         for card in idea_cards_schema.idea_cards:
-            st.write(f"**{card.idea_name}**")
+            st.markdown(f"**{card.idea_name}**")
             
-            # Format and display the explanation
-            explanation_parts = split_latex(format_latex(card.idea_explanation))
-            for part in explanation_parts:
-                if part.startswith('$$') and part.endswith('$$'):
-                    st.latex(part.strip('$'))
-                else:
-                    st.write(part)
+            # Render the explanation with LaTeX support
+            render_latex(card.idea_explanation)
             
             with st.expander("See detailed explanation"):
                 # Split the context into bullet points
                 context_points = card.idea_context.split('\n')
                 for point in context_points:
                     if point.strip():  # Check if the point is not empty
-                        # Format and display each point
-                        point_parts = split_latex(format_latex(point))
-                        for part in point_parts:
-                            if part.startswith('$$') and part.endswith('$$'):
-                                st.latex(part.strip('$'))
-                            else:
-                                st.markdown(f"- {part}")
+                        render_latex(f"- {point.strip()}")
 
     except Exception as e:
         st.error(f"An error occurred while processing the audio: {str(e)}")

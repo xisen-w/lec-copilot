@@ -1,6 +1,11 @@
 import sys
 import os
 from typing import List
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add the project root directory to the Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,11 +49,17 @@ class LectureAgent(LLMAgent):
 
         For each key idea, provide:
         1. Idea Name: A concise name for the idea.
-        2. Idea Explanation: A brief explanation of the idea. Use LaTeX for formulas if needed, enclosed in $$ symbols.
-        3. Idea Context: Detailed explanation with at least 3 bullet points. Use LaTeX for formulas if needed, enclosed in $$ symbols.
+        2. Idea Explanation: A brief explanation of the idea. 
+        3. Idea Context: Detailed explanation with at least 3 bullet points. Focus on how things are related.
 
-        Example of using LaTeX for formulas:
-        - The quadratic formula is given by $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
+        Note: if the idea is/involves a formula, please use LaTeX to format it.
+        For inline formulas, use single dollar signs: $formula$
+        For display formulas (on their own line), use double dollar signs: $$formula$$
+
+        Example:
+        - The quadratic formula is given by $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
+        - The area of a circle is:
+          $$A = \\pi r^2$$
 
         Ensure that your explanations are clear and appropriate for an undergraduate level of understanding.
         """
@@ -60,6 +71,14 @@ class LectureAgent(LLMAgent):
             user_prompt=user_prompt,
             schema_class=IdeaCardsSchema
         )
+
+        # Log the received idea cards
+        logger.info("Received idea cards:")
+        for card in idea_cards.idea_cards:
+            logger.info(f"Idea Name: {card.idea_name}")
+            logger.info(f"Idea Explanation: {card.idea_explanation}")
+            logger.info(f"Idea Context: {card.idea_context}")
+            logger.info("---")
 
         return idea_cards
 
