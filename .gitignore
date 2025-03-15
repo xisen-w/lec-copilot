@@ -181,15 +181,17 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# VSCode
+# VSCodess=
 .vscode/
 
 # OS generated files
 .DS_Store
-.DS_Store?
+.DS_Store?s
 ._*
 .Spotlight-V100
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+lec-env/
 
